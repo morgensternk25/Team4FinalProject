@@ -1,35 +1,29 @@
 (() => {
   "use strict";
 
-  // Team 4 is the first project in Chain B.
+  // Team configuration. The experiment ID is a public routing identifier, not a password.
   const TEAM_ID = "4";
   const CHAIN_ID = "B";
   const DATAPIPE_EXPERIMENT_ID = "gZZ1nvUDsmz4";
   const NEXT_PROJECT_URL = "https://laurenbier.github.io/Memory-on-trial/";
-  const DATAPIPE_URL = "https://pipe.jspsych.org/api/data/";
+  const DATAPIPE_ENDPOINT = "https://pipe.jspsych.org/api/data/";
 
   const $ = (id) => document.getElementById(id);
   const screens = ["welcome", "videoScreen", "postScreen", "questionScreen", "feedbackScreen", "resultsScreen"];
   const show = (id) => screens.forEach((screen) => $(screen).classList.toggle("hidden", screen !== id));
   const now = () => new Date().toISOString();
 
+  // FIRST project: create one anonymous ID once, at the beginning of the session.
   function makeSessionId() {
-    if (window.crypto && typeof window.crypto.randomUUID === "function") {
-      return window.crypto.randomUUID().replace(/-/g, "").toUpperCase();
-    }
-    const bytes = new Uint8Array(16);
-    if (window.crypto && typeof window.crypto.getRandomValues === "function") {
+    const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const bytes = new Uint8Array(12);
+    if (window.crypto && window.crypto.getRandomValues) {
       window.crypto.getRandomValues(bytes);
-      return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("").toUpperCase();
+      return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join("");
     }
-    // Last-resort fallback for older browsers; no identifying information is used.
-    return (`${Date.now().toString(16)}${Math.random().toString(16).slice(2)}${Math.random().toString(16).slice(2)}`)
-      .replace(/[^a-f0-9]/gi, "").slice(0, 32).toUpperCase();
+    return Array.from({ length: 12 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join("");
   }
-
-  // FIRST-project rule: create exactly one new sid at the beginning of this project.
-  const sessionId = makeSessionId();
-  const sessionStart = now();
+  const sid = makeSessionId();
 
   const clip = Math.random() < 0.5 ? "stop" : "yield";
   const misinformation = Math.random() < 0.5 ? "misleading" : "accurate";
@@ -55,12 +49,9 @@
   let startedAt = null;
   let videoStartedAt = null;
   let postShownAt = null;
-  let completedAt = null;
-  let summaryCSV = "";
-  let trialsCSV = "";
+  let summaryData = null;
   let uploadInProgress = false;
-  let saveSucceeded = false;
-  let retryAttempted = false;
+  let uploadComplete = false;
 
   const video = $("eventVideo");
   $("videoSource").src = clip === "stop" ? "accident_stop.mp4" : "accident_yield.mp4";
@@ -79,9 +70,7 @@
     $("videoStatus").textContent = "Video complete. You may continue.";
     $("videoContinue").disabled = false;
   });
-  video.addEventListener("play", () => {
-    if (!videoStartedAt) videoStartedAt = now();
-  });
+  video.addEventListener("play", () => { if (!videoStartedAt) videoStartedAt = now(); });
 
   $("videoContinue").addEventListener("click", () => {
     if (!videoWatched) return;
@@ -100,14 +89,13 @@
   });
 
   function renderQuestion() {
-    const question = questions[qIndex];
+    const q = questions[qIndex];
     $("questionCount").textContent = `Question ${qIndex + 1} of ${questions.length}`;
     $("questionProgress").style.width = `${((qIndex + 1) / questions.length) * 100}%`;
-    $("questionText").textContent = question.text;
+    $("questionText").textContent = q.text;
     $("answerOptions").innerHTML = "";
     $("nextQuestion").disabled = true;
-
-    question.options.forEach((option) => {
+    q.options.forEach((option) => {
       const label = document.createElement("label");
       label.className = "option";
       const radio = document.createElement("input");
@@ -127,15 +115,15 @@
     event.preventDefault();
     const selected = document.querySelector('input[name="answer"]:checked');
     if (!selected) return;
-    const question = questions[qIndex];
+    const q = questions[qIndex];
     answers.push({
-      question_id: question.id,
-      question: question.text,
+      question_id: q.id,
+      question: q.text,
       response: selected.value,
-      correct: selected.value === question.correct,
-      misinformation_consistent: question.misinformationOptions.includes(selected.value)
+      correct: selected.value === q.correct,
+      misinformation_consistent: q.misinformationOptions.includes(selected.value)
     });
-    qIndex += 1;
+    qIndex++;
     if (qIndex < questions.length) renderQuestion();
     else showFeedbackScreen();
   });
@@ -151,43 +139,110 @@
     $("postConfidenceValue").textContent = $("postConfidence").value;
   });
 
-  function csvCell(value) {
-    if (value === null || value === undefined) return "";
-    const stringValue = String(value);
-    return /[",\r\n]/.test(stringValue) ? `"${stringValue.replace(/"/g, '""')}"` : stringValue;
-  }
-
-  function rowsToCSV(rows) {
+  function buildCSV(rows) {
     if (!rows.length) return "";
     const headers = Object.keys(rows[0]);
+    const csvCell = (value) => {
+      if (value === null || value === undefined) return "";
+      const stringValue = String(value);
+      return /[",\n\r]/.test(stringValue) ? `"${stringValue.replace(/"/g, '""')}"` : stringValue;
+    };
     return [headers.join(","), ...rows.map((row) => headers.map((header) => csvCell(row[header])).join(","))].join("\r\n");
   }
 
-  function downloadCSV(filename, csvText) {
-    if (!csvText) return;
-    const blob = new Blob(["\uFEFF" + csvText], { type: "text/csv;charset=utf-8;" });
+  function downloadCSV(filename, rows) {
+    const csv = buildCSV(rows);
+    if (!csv) return;
+    const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = filename;
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
     URL.revokeObjectURL(url);
   }
 
-  function buildAndDisplayResults() {
-    completedAt = now();
+  function showBackupDownloads() {
+    $("downloadActions").classList.remove("hidden");
+  }
+
+  async function uploadCSV(filename, csvText) {
+    const response = await fetch(DATAPIPE_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        experimentID: DATAPIPE_EXPERIMENT_ID,
+        filename,
+        data: csvText
+      })
+    });
+
+    let result = {};
+    try { result = await response.json(); } catch (_) { /* Non-JSON error response. */ }
+
+    if (response.status === 201 || response.status === 202) return;
+    // A retry after a partial success can encounter a file already stored by the first attempt.
+    if (response.status === 400 && result.error === "FILE_EXISTS") return;
+
+    const reason = result.message || result.error || `HTTP ${response.status}`;
+    throw new Error(`${filename}: ${reason}`);
+  }
+
+  function redirectToNextProject() {
+    const destination = new URL(NEXT_PROJECT_URL);
+    destination.searchParams.set("sid", sid);
+    destination.searchParams.set("chain", CHAIN_ID);
+    window.location.assign(destination.toString());
+  }
+
+  async function saveAndContinue() {
+    if (uploadInProgress || uploadComplete) return;
+    uploadInProgress = true;
+    $("finishBtn").disabled = true;
+    $("saveStatus").className = "save-status";
+    $("saveStatus").textContent = "Saving your responses securely… Please keep this page open.";
+    $("retryUploads").classList.add("hidden");
+    $("downloadActions").classList.add("hidden");
+
+    try {
+      const summaryCSV = buildCSV([summaryData]);
+      const trialsCSV = buildCSV(trials);
+      await Promise.all([
+        uploadCSV(`summary_${sid}.csv`, summaryCSV),
+        uploadCSV(`trials_${sid}.csv`, trialsCSV)
+      ]);
+      uploadComplete = true;
+      $("saveStatus").className = "save-status success";
+      $("saveStatus").textContent = "Your responses have been saved. Continuing to the next activity…";
+      if (isTestRun) showBackupDownloads();
+      // Redirect only after DataPipe has accepted both required files.
+      window.setTimeout(redirectToNextProject, isTestRun ? 5000 : 1200);
+    } catch (error) {
+      console.error("DataPipe upload failed:", error);
+      uploadInProgress = false;
+      $("finishBtn").disabled = false;
+      $("saveStatus").className = "save-status error";
+      $("saveStatus").textContent = "We couldn't confirm that your responses were saved. Your answers are still available on this page. Please retry saving. If it still fails, download both CSV files below and give them to the researcher.";
+      $("retryUploads").classList.remove("hidden");
+      showBackupDownloads();
+      return;
+    }
+    uploadInProgress = false;
+  }
+
+  $("finishBtn").addEventListener("click", () => {
+    if (summaryData) return;
+    postConfidence = Number($("postConfidence").value);
     const correctCount = answers.filter((answer) => answer.correct).length;
     const falseMemoryCount = answers.filter((answer) => answer.misinformation_consistent && !answer.correct).length;
-
-    const summary = {
-      session_id: sessionId,
+    summaryData = {
+      session_id: sid,
       team_id: TEAM_ID,
       chain_id: CHAIN_ID,
-      session_start: sessionStart,
       started_at: startedAt,
-      completed_at: completedAt,
+      completed_at: now(),
       clip_condition: clip,
       sign_shown: sign,
       information_condition: misinformation,
@@ -203,7 +258,7 @@
 
     answers.forEach((answer, index) => {
       trials.push({
-        session_id: sessionId,
+        session_id: sid,
         team_id: TEAM_ID,
         chain_id: CHAIN_ID,
         trial_number: index + 1,
@@ -220,11 +275,8 @@
       });
     });
 
-    window.studySummary = summary;
+    window.studySummary = summaryData;
     window.studyTrials = trials;
-    summaryCSV = rowsToCSV([summary]);
-    trialsCSV = rowsToCSV(trials);
-
     $("resultSummary").innerHTML = `
       <div class="result-grid">
         <div class="metric"><strong>${correctCount} / 4</strong><span>Correct answers</span></div>
@@ -232,85 +284,37 @@
         <div class="metric"><strong>${postConfidence}</strong><span>Confidence after feedback</span></div>
       </div>`;
     show("resultsScreen");
-  }
-
-  async function sendCsvToDataPipe(filename, csvText, isRetry) {
-    const response = await fetch(DATAPIPE_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        experimentID: DATAPIPE_EXPERIMENT_ID,
-        filename,
-        data: csvText
-      })
-    });
-
-    const responseBody = await response.json().catch(() => ({}));
-    if (response.status === 201 || response.status === 202) return;
-
-    // A FILE_EXISTS response is considered success only during a manual retry,
-    // which handles the case where an earlier attempt stored the file but the
-    // browser did not receive/observe the successful response.
-    if (isRetry && response.status === 400 && responseBody.error === "FILE_EXISTS") return;
-
-    throw new Error(responseBody.error || `HTTP_${response.status}`);
-  }
-
-  async function saveAndRedirect(isRetry = false) {
-    if (uploadInProgress || saveSucceeded) return;
-    uploadInProgress = true;
-    $("finishBtn").disabled = true;
-    $("retrySave").disabled = true;
-    $("saveFailure").classList.add("hidden");
-    $("saveStatus").classList.remove("success", "failure");
-    $("saveStatus").textContent = isRetry ? "Retrying save…" : "Saving your responses…";
-
-    const files = [
-      { filename: `summary_${sessionId}.csv`, data: summaryCSV },
-      { filename: `trials_${sessionId}.csv`, data: trialsCSV }
-    ];
-
-    try {
-      // Sequential uploads make it clear which file failed and avoid duplicate
-      // concurrent requests. The participant is not redirected until both pass.
-      for (const file of files) {
-        await sendCsvToDataPipe(file.filename, file.data, isRetry);
-      }
-
-      saveSucceeded = true;
-      $("saveStatus").classList.add("success");
-      $("saveStatus").textContent = "Your responses were saved successfully. Continuing to the next activity…";
-      $("completionMessage").textContent = "Your responses have been saved. You will now continue to the next activity.";
-      const next = new URL(NEXT_PROJECT_URL);
-      next.searchParams.set("sid", sessionId);
-      next.searchParams.set("chain", CHAIN_ID);
-      window.setTimeout(() => window.location.assign(next.toString()), 1200);
-    } catch (error) {
-      uploadInProgress = false;
-      $("saveStatus").classList.add("failure");
-      $("saveStatus").textContent = "Automatic saving failed. Your responses are still available on this page.";
-      $("saveFailure").classList.remove("hidden");
-      $("saveErrorText").textContent = `We couldn't save every file to the study data store (${error.message}). Please retry. If retrying does not work, download both CSV backup files and contact the researcher.`;
-      $("retrySave").disabled = false;
-      retryAttempted = true;
-    }
-  }
-
-  $("finishBtn").addEventListener("click", () => {
-    if (answers.length !== questions.length || postConfidence !== null) return;
-    postConfidence = Number($("postConfidence").value);
-    buildAndDisplayResults();
-    saveAndRedirect(false);
+    saveAndContinue();
   });
 
-  $("retrySave").addEventListener("click", () => {
-    if (retryAttempted) saveAndRedirect(true);
-  });
-
+  $("retryUploads").addEventListener("click", saveAndContinue);
   $("downloadSummary").addEventListener("click", () => {
-    downloadCSV(`summary_${sessionId}.csv`, summaryCSV);
+    if (summaryData) downloadCSV(`summary_${sid}.csv`, [summaryData]);
   });
   $("downloadTrials").addEventListener("click", () => {
-    downloadCSV(`trials_${sessionId}.csv`, trialsCSV);
+    if (trials.length) downloadCSV(`trials_${sid}.csv`, trials);
   });
+
+  // Local CSV backups are available during an explicitly marked test run.
+  const isTestRun = new URLSearchParams(window.location.search).get("test") === "1";
+  if (isTestRun) {
+    const testNotice = document.createElement("p");
+    testNotice.className = "small";
+    testNotice.textContent = "TEST MODE: local CSV backup controls will be shown after submission.";
+    $("welcome").append(testNotice);
+  }
+  window.addEventListener("beforeunload", (event) => {
+    if (uploadInProgress && !uploadComplete) {
+      event.preventDefault();
+      event.returnValue = "Your responses are still being saved. Leave this page?";
+    }
+  });
+  if (isTestRun) {
+    const originalShowBackupDownloads = showBackupDownloads;
+    // Test mode controls are revealed once the result screen is displayed.
+    const observer = new MutationObserver(() => {
+      if (!$("resultsScreen").classList.contains("hidden")) originalShowBackupDownloads();
+    });
+    observer.observe($("resultsScreen"), { attributes: true, attributeFilter: ["class"] });
+  }
 })();

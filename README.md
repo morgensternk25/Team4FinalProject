@@ -1,52 +1,72 @@
-# Eyewitness Memory & Social Media Experiment — Team 4
+# Eyewitness Memory & Social Media Experiment
 
-This is the revised static GitHub Pages project for **Team 4**, the **FIRST** project in **Chain B**.
+A static, browser-based psychology experiment examining post-event misinformation and confidence changes after feedback. It uses the two supplied moving traffic-incident clips.
 
-## Files to keep together in the repository root
+## Files
 
-- `index.html`
-- `styles.css`
-- `script.js`
-- `accident_stop.mp4`
-- `accident_yield.mp4`
+- `index.html` — participant-facing experiment
+- `styles.css` — page styling
+- `script.js` — random assignment, presentation, questions, confidence measures, scoring, and CSV exports
+- `accident_stop.mp4` — supplied clip showing a STOP sign
+- `accident_yield.mp4` — supplied clip showing a YIELD sign
 
-The two MP4 files are unchanged and must remain in the repository root with these exact names.
+## Run locally
 
-## Team 4 chain and DataPipe configuration
+1. Keep all six files in the same folder.
+2. Open `index.html` in a current version of Chrome, Firefox, Safari, or Edge.
+3. Complete the experiment. The selected video plays once; after it ends, the Continue button becomes available.
+4. On the final response, the app automatically uploads `summary_<sid>.csv` and `trials_<sid>.csv` to the Team 4 DataPipe experiment. After both files are accepted, participants are redirected to the next activity with the same anonymous `sid` and chain `B`.
+5. If automatic saving fails, the participant can retry or download both CSV files as a backup. Add `?test=1` to the app URL to show backup-download controls during testing.
 
-- Team ID: `4`
-- Chain ID: `B`
-- Position: FIRST
-- DataPipe experiment ID: `gZZ1nvUDsmz4`
-- Next project: `https://laurenbier.github.io/Memory-on-trial/`
+If a browser blocks video playback when opening the file directly, run a simple local static server from this folder:
 
-At the beginning of this FIRST project, the page creates one random anonymous session ID. The same ID is written to both CSV files and passed to Team 5 as `sid`, with `chain=B`.
+```bash
+python3 -m http.server 8000
+```
 
-## Automatic saving
+Then open `http://localhost:8000`.
 
-When a participant submits the final confidence response, the app:
+## Publish with GitHub Pages
 
-1. Scores the four memory responses and creates the participant summary and four-row trial CSV.
-2. Displays a saving status and posts both CSVs to `https://pipe.jspsych.org/api/data/`.
-3. Waits for both files to be accepted (`201` or `202`) before redirecting.
-4. If an upload fails, stays on the page and provides a retry button and local CSV backup downloads.
+1. Create a new GitHub repository.
+2. Upload all six project files to the repository root (not just the HTML file).
+3. In the repository, open **Settings → Pages**.
+4. Under Build and deployment, select **Deploy from a branch**.
+5. Select the `main` branch and `/ (root)`, then Save.
+6. Wait for GitHub Pages to publish and open the public URL shown in Settings → Pages.
 
-On a manual retry, an HTTP `400` response with `FILE_EXISTS` is treated as success for that file. This supports the case where DataPipe stored a file during an earlier attempt but the browser did not receive the successful response.
+The MP4 files must remain in the repository root with their exact filenames because `script.js` references them.
 
-Filenames are `summary_<sid>.csv` and `trials_<sid>.csv`. Both CSVs contain `session_id`, `team_id`, and `chain_id`. No participant names, email addresses, passwords, or other direct identifiers are collected.
+## Experimental design
 
-## Testing and deployment
+Participants are independently randomized to:
 
-1. Replace the existing `index.html`, `styles.css`, and `script.js` in the Team 4 GitHub repository with the revised versions.
-2. Keep both supplied MP4 files in the repository root.
-3. Publish using GitHub Pages from the repository root.
-4. Test the live GitHub Pages URL, not only a local file.
-5. Complete a test run and confirm that **both** CSV files appear in the Team 4 DataPipe destination.
-6. Confirm that the browser redirects to Team 5 with the same `sid` and `chain=B`.
-7. Coordinate an end-to-end chain test with Teams 5 and 6 before recruitment.
+- **Post-event information:** accurate or misleading.
+- **Feedback:** strongly confirming or neutral.
+- **Clip version:** STOP-sign or YIELD-sign version (randomly selected).
 
-For local testing, run `python3 -m http.server 8000` from the project folder and open `http://localhost:8000`.
+This creates a 2 × 2 design for information accuracy and feedback, with clip version randomized as a stimulus variant. The misleading post reverses the road-sign detail and which vehicle approached from the left/right. The accurate post describes those details as shown in the assigned clip.
 
-## Experimental design retained
+The four memory questions ask about:
+1. Road sign at the intersection.
+2. Vehicle approaching from the left.
+3. Vehicle approaching from the right.
+4. Outcome of the event.
 
-Participants are independently randomized to accurate or misleading post-event information, confirming or neutral feedback, and the STOP-sign or YIELD-sign clip. The four original memory questions, scoring, confidence slider, debrief, and visual design are retained.
+Participants receive their assigned feedback first, then rate overall confidence once on a 0–100 scale. Feedback assignment is independent of answer accuracy. The confirming feedback is deliberately non-contingent; it should not be interpreted as a true performance score.
+
+## Data files
+
+At completion, participants can download:
+
+- **Summary CSV:** one row per session.
+- **Trial-level CSV:** four rows per session, one per memory question.
+
+The app sends anonymous CSV data to DataPipe using the assigned Team 4 experiment ID. Each participant receives one random session ID, and the same ID is included in both files and passed to the next project. No names, email addresses, passwords, API keys, or other direct identifiers are collected or transmitted. The DataPipe experiment ID is configuration, not a secret credential.
+
+## Important research notes
+
+- The supplied clips are approximately 6.6 seconds and 5.1 seconds long, respectively. They show a staged collision between a dark sedan and a white SUV at an intersection; the main visible difference is the STOP versus YIELD sign.
+- The misleading post intentionally changes the sign and vehicle approach directions. This is a strong manipulation, so pilot-test it with people who are not in the final sample.
+- The two clip variants differ in road-sign content. The script randomizes clip version independently of the two experimental variables and stores the version in the data so it can be controlled for in analysis.
+- This is a class-project prototype, not a validated instrument. Obtain instructor approval for consent, debriefing, participant age, data handling, and any required ethics review before collecting data.

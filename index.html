@@ -14,12 +14,6 @@
       <p class="subtitle">A study of event memory, post-event information, and confidence</p>
     </header>
 
-    <section id="entryError" class="panel hidden" role="alert">
-      <div class="progress-label">UNABLE TO START</div>
-      <h2>Please begin through the preceding activity</h2>
-      <p id="entryErrorMessage">This activity needs a valid session link from the previous study. Please return to the preceding activity and follow its link here.</p>
-    </section>
-
     <section id="welcome" class="panel">
       <div class="progress-label">WELCOME</div>
       <h2>Thank you for participating</h2>
@@ -95,8 +89,7 @@
     <section id="resultsScreen" class="panel hidden">
       <div class="progress-label">COMPLETED</div>
       <h2>Thank you for taking part</h2>
-      <p id="completionMessage">Your responses have been recorded. Preparing to securely save your study data.</p>
-      <div id="saveStatus" class="save-status" role="status" aria-live="polite">Saving your responses…</div>
+      <p>Your responses have been recorded in this browser session.</p>
       <div id="resultSummary" class="results-box"></div>
       <div class="notice debrief">
         <h3>Debriefing</h3>
@@ -105,18 +98,16 @@
         <p>The two traffic clips show the same staged collision scenario with different road signs (STOP or YIELD). The clip and experimental conditions were assigned automatically. No identifying information is requested by this page.</p>
         <p>If you have questions about the class project, please contact your instructor or the student researcher.</p>
       </div>
-      <div id="saveFailure" class="save-failure hidden" role="alert">
-        <h3>We couldn't confirm that your data was saved.</h3>
-        <p id="saveErrorText">Please try saving again. Do not close this page until saving succeeds or you have downloaded both backup files.</p>
-        <button id="retrySave" class="primary">Retry saving</button>
-        <div class="download-row">
-          <button id="downloadSummary" class="secondary">Download summary CSV backup</button>
-          <button id="downloadTrials" class="secondary">Download trial-level CSV backup</button>
-        </div>
+      <div id="saveStatus" class="save-status" role="status" aria-live="polite">Preparing your responses for automatic saving…</div>
+      <div id="downloadActions" class="download-row hidden">
+        <button id="downloadSummary" class="primary">Download summary CSV</button>
+        <button id="downloadTrials" class="secondary">Download trial-level CSV</button>
       </div>
+      <button id="retryUploads" class="primary hidden">Retry saving responses</button>
+      <p class="small">Your responses are submitted automatically. Keep this page open until saving is confirmed and the next activity opens.</p>
     </section>
 
-    <footer>Participation is voluntary · Anonymous study responses are saved automatically</footer>
+    <footer>Participation is voluntary · Anonymous study responses are sent to the project DataPipe</footer>
   </main>
   <script src="script.js"></script>
 </body>
