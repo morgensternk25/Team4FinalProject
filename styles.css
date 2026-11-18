@@ -48,6 +48,10 @@ input[type=range] { width:100%; accent-color:var(--blue); margin:22px 0 4px; }
 .metric { background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px; }
 .metric strong { display:block; font-size:1.35rem; }
 .debrief p { margin:10px 0; }
+.save-status { border:1px solid var(--line); border-radius:10px; padding:13px 15px; margin:18px 0; background:var(--pale); font-weight:700; }
+.save-status.success { color:#17633b; border-color:#b9dfc9; background:#eff9f2; }
+.save-status.failure { color:#8a2c24; border-color:#e7c2bf; background:#fff4f2; }
+.save-failure { border:1px solid #e7c2bf; border-radius:12px; padding:18px; margin:18px 0; background:#fffafa; }
 .download-row { display:flex; flex-wrap:wrap; gap:10px; margin:20px 0 8px; }
 footer { text-align:center; color:var(--muted); font-size:.78rem; padding:18px 0 4px; }
 @media (max-width:560px) { .shell { margin:18px auto; width:calc(100% - 20px); } .panel { padding:20px; } .question-head { display:block; } .range-labels { font-size:.72rem; } .result-grid { grid-template-columns:1fr 1fr; } }
