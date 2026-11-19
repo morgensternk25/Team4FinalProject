@@ -14,12 +14,6 @@
       <p class="subtitle">A study of event memory, post-event information, and confidence</p>
     </header>
 
-    <section id="entryError" class="panel hidden" role="alert">
-      <div class="progress-label">UNABLE TO START</div>
-      <h2>Please begin through the preceding activity</h2>
-      <p id="entryErrorMessage">This activity needs a valid session link from the previous study. Please return to the preceding activity and follow its link here.</p>
-    </section>
-
     <section id="welcome" class="panel">
       <div class="progress-label">WELCOME</div>
       <h2>Thank you for participating</h2>
@@ -95,28 +89,41 @@
     <section id="resultsScreen" class="panel hidden">
       <div class="progress-label">COMPLETED</div>
       <h2>Thank you for taking part</h2>
-      <p id="completionMessage">Your responses have been recorded. Preparing to securely save your study data.</p>
-      <div id="saveStatus" class="save-status" role="status" aria-live="polite">Saving your responses…</div>
+      <p>Your responses have been recorded in this browser session.</p>
       <div id="resultSummary" class="results-box"></div>
+      <section class="notice learning-section" aria-labelledby="what-results-mean">
+        <h3 id="what-results-mean">What your results mean</h3>
+        <div id="individualInterpretation"></div>
+      </section>
+      <section class="notice learning-section" aria-labelledby="expected-pattern">
+        <h3 id="expected-pattern">What researchers would expect to find</h3>
+        <p><strong>Misinformation effect:</strong> Across a group, participants who read misleading post-event information are expected, on average, to make more errors consistent with that misinformation than participants who read accurate information. This reflects the reconstructive nature of memory: remembering is not a perfect replay, and later information can become blended with the original event.</p>
+        <p><strong>Source-monitoring errors:</strong> A participant may remember a detail but confuse where it came from— the video or the later social media post. This can make a suggested detail feel like something they actually witnessed.</p>
+        <p><strong>Feedback and confidence:</strong> Strongly confirming feedback may increase confidence even when an answer is incorrect, because confidence is influenced by later social feedback as well as by the quality of the original memory. Confidence and accuracy therefore do not always move together.</p>
+        <p class="small">These are predicted group-level patterns, not a diagnosis or a pass/fail standard for an individual participant.</p>
+      </section>
+      <section class="notice learning-section" aria-labelledby="why-different">
+        <h3 id="why-different">Why your results might differ from the expected pattern</h3>
+        <div id="deviationExplanation"></div>
+        <p>Individual results can vary because of attention while watching the video, how clearly a detail was encoded, prior expectations, the similarity of the vehicles, the delay between viewing and recall, and whether the participant correctly remembers the source of a detail. Random assignment also means one person's result may not show the average effect. A single participant's score cannot establish whether an experimental condition caused an effect.</p>
+      </section>
       <div class="notice debrief">
-        <h3>Debriefing</h3>
-        <p>This study examines two effects: the <strong>misinformation effect</strong>, in which inaccurate information presented after an event can influence later memory reports, and <strong>confirmation-related feedback effects</strong>, in which affirming feedback may change confidence in one's answers.</p>
-        <p>Participants were randomly assigned to read either an accurate or misleading social media-style post and to receive either strongly confirming or neutral feedback. Feedback was assigned independently of answer accuracy and was not an evaluation of your actual performance. The post may have included an incorrect detail about the road sign and/or which vehicle approached from each side.</p>
-        <p>The two traffic clips show the same staged collision scenario with different road signs (STOP or YIELD). The clip and experimental conditions were assigned automatically. No identifying information is requested by this page.</p>
+        <h3>Full debriefing</h3>
+        <p>This study examines how inaccurate post-event information can influence eyewitness reports (the <strong>misinformation effect</strong>) and how affirming feedback can influence confidence. The experiment randomly assigned participants to read either an accurate or misleading social media-style post and to receive either strongly confirming or neutral feedback. Feedback was assigned independently of answer accuracy and was not an evaluation of your actual performance.</p>
+        <p>The post may have included an incorrect detail about the road sign and/or which vehicle approached from each side. The two traffic clips show the same staged collision scenario with different road signs (STOP or YIELD). No identifying information is requested by this page.</p>
         <p>If you have questions about the class project, please contact your instructor or the student researcher.</p>
       </div>
-      <div id="saveFailure" class="save-failure hidden" role="alert">
-        <h3>We couldn't confirm that your data was saved.</h3>
-        <p id="saveErrorText">Please try saving again. Do not close this page until saving succeeds or you have downloaded both backup files.</p>
-        <button id="retrySave" class="primary">Retry saving</button>
-        <div class="download-row">
-          <button id="downloadSummary" class="secondary">Download summary CSV backup</button>
-          <button id="downloadTrials" class="secondary">Download trial-level CSV backup</button>
-        </div>
+      <div id="saveStatus" class="save-status" role="status" aria-live="polite">Preparing your responses for automatic saving…</div>
+      <div id="downloadActions" class="download-row hidden">
+        <button id="downloadSummary" class="primary">Download summary CSV</button>
+        <button id="downloadTrials" class="secondary">Download trial-level CSV</button>
       </div>
+      <button id="retryUploads" class="primary hidden">Retry saving responses</button>
+      <p id="continueHelp" class="small">Your responses are uploading automatically. Please read the explanation above; you can take a break before continuing.</p>
+      <button id="continueBtn" class="primary" disabled>Continue to next activity</button>
     </section>
 
-    <footer>Participation is voluntary · Anonymous study responses are saved automatically</footer>
+    <footer>Participation is voluntary · Anonymous study responses are sent to the project DataPipe</footer>
   </main>
   <script src="script.js"></script>
 </body>
